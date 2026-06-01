@@ -41,7 +41,12 @@ Deno.serve(async (req) => {
 
     const userId = userData.user.id;
     const [messagesResult, mealsResult, exercisesResult, requestsResult, diaryResult] = await Promise.all([
-      supabase.from('chat_messages').select('role, content, target_date, created_at').eq('user_id', userId).eq('diary_date', target_date).order('created_at'),
+      supabase
+        .from('chat_messages')
+        .select('role, content, diary_date, target_date, needs_diary_update, created_at')
+        .eq('user_id', userId)
+        .or(`diary_date.eq.${target_date},target_date.eq.${target_date}`)
+        .order('created_at'),
       supabase.from('meals').select('*').eq('user_id', userId).eq('diary_date', target_date).order('created_at'),
       supabase.from('exercises').select('*').eq('user_id', userId).eq('diary_date', target_date).order('created_at'),
       supabase.from('diary_update_requests').select('*').eq('user_id', userId).eq('target_date', target_date).eq('status', 'pending').order('created_at'),
@@ -88,6 +93,9 @@ ${JSON.stringify(requestsResult.data ?? [])}`;
     if (diaryError) throw diaryError;
 
     const tagNames = [...new Set((ai.tags ?? []).map((tag) => tag.trim()).filter(Boolean))];
+    const { error: deleteTagsError } = await supabase.from('diary_tags').delete().eq('user_id', userId).eq('diary_id', diary.id);
+    if (deleteTagsError) throw deleteTagsError;
+
     for (const name of tagNames) {
       const { data: tag, error: tagError } = await supabase
         .from('tags')

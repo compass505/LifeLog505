@@ -34,6 +34,24 @@ const systemPrompt = `あなたはLifeLog505というライフログアプリ内
 返答は必ず次のJSON形式にしてください。
 {"reply":"string","target_date":"YYYY-MM-DD or null","needs_diary_update":true,"mood":"string or null","tags":["string"],"meals":[],"exercises":[],"diary_update_request":null}`;
 
+function toneLabel(tone?: string | null) {
+  if (tone === 'calm') return '落ち着いた、やわらかい口調';
+  if (tone === 'cheerful') return '明るめで親しみやすい口調';
+  return '友達のような自然で親しみやすい口調';
+}
+
+function buildUpdateRequestContent(ai: ChatAiResult, message: string, targetDate: string) {
+  const parts = [
+    `対象日: ${targetDate}`,
+    `ユーザー発言: ${message}`,
+  ];
+  if (ai.mood) parts.push(`感情: ${ai.mood}`);
+  if (ai.tags?.length) parts.push(`タグ候補: ${ai.tags.join(', ')}`);
+  if (ai.meals?.length) parts.push(`食事候補: ${JSON.stringify(ai.meals)}`);
+  if (ai.exercises?.length) parts.push(`運動候補: ${JSON.stringify(ai.exercises)}`);
+  return parts.join('\n');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -67,6 +85,12 @@ ${profile?.important_profile ?? 'なし'}
 
 最近の関心ごと:
 ${profile?.recent_interests ?? 'なし'}
+
+表示名:
+${profile?.display_name ?? 'なし'}
+
+希望するAIの口調:
+${toneLabel(profile?.ai_tone)}
 
 直近の会話:
 ${JSON.stringify([...(recentMessages ?? [])].reverse())}
@@ -129,6 +153,13 @@ ${todayDiary?.summary ?? 'なし'}`;
         user_id: userId,
         target_date: ai.diary_update_request.target_date,
         content: ai.diary_update_request.content,
+        source_chat_message_id: userMessage.id,
+      });
+    } else if (needsUpdate && targetDate !== client_date) {
+      await supabase.from('diary_update_requests').insert({
+        user_id: userId,
+        target_date: targetDate,
+        content: buildUpdateRequestContent(ai, message, targetDate),
         source_chat_message_id: userMessage.id,
       });
     }

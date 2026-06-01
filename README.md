@@ -20,11 +20,15 @@ cp .env.example .env
 npm run dev
 ```
 
-`.env` にフロントエンド用のSupabase値を設定してください。
+`.env` にはローカル開発用の値を設定してください。`VITE_`で始まる値だけがフロントエンドで利用されます。
 
 ```text
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+OPENAI_API_KEY=
+OPENAI_MODEL=
 ```
 
 ## Supabase
@@ -38,8 +42,10 @@ Supabase SQL Editorで以下を順番に実行します。
 Edge Functions用の環境変数をSupabase側に設定します。
 
 ```bash
-supabase secrets set SERVICE_ROLE_KEY=... OPENAI_API_KEY=...
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=... OPENAI_API_KEY=...
 ```
+
+必要に応じて`OPENAI_MODEL`も設定できます。未設定時はEdge Function側で`gpt-4o-mini`を使います。
 
 Edge Functionsをデプロイします。
 
