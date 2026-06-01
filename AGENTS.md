@@ -93,6 +93,7 @@ Future features that are out of scope for the MVP include:
 - Use Japanese for user-facing UI text.
 - Do not over-engineer.
 - Prioritize completing the MVP flow before polishing future features.
+- 並列処理などが生じた場合、必要に応じてサブエージェントを使用してください。
 
 ---
 
